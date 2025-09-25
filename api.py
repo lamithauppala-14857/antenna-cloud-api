@@ -1,27 +1,37 @@
-from fastapi import FastAPI
-import os
+from fastapi import FastAPI, Query
+import pandas as pd
+import matplotlib.pyplot as plt
+import io
+from fastapi.responses import StreamingResponse
 
 app = FastAPI(title="Antenna Cloud API")
 
-# Root route to prevent 404
+# Load CSV once when the app starts
+df = pd.read_csv("data.csv")  # make sure your CSV is in the project folder
+
 @app.get("/")
 def root():
     return {"status": "API is live!"}
 
-# Example endpoint
-@app.get("/hello")
-def hello():
-    return {"message": "Hello World"}
+@app.get("/plot")
+def plot_graph(frequency: float = Query(..., description="Frequency to plot")):
+    # Filter CSV data based on frequency column
+    filtered = df[df["Frequency"] == frequency]  # adjust column name
 
-# Add more endpoints below as needed
-# @app.get("/another-endpoint")
-# def another():
-#     return {"data": "This is another endpoint"}
+    # Generate graph
+    plt.figure()
+    plt.plot(filtered["X"], filtered["Y"])  # replace X, Y with your actual columns
+    plt.title(f"Graph for frequency {frequency}")
+    plt.xlabel("X")
+    plt.ylabel("Y")
 
-# Run with uvicorn when executed directly
-if __name__ == "__main__":
-    import uvicorn
-    # Use the PORT environment variable provided by Render
-    port = int(os.environ.get("PORT", 10000))
-    uvicorn.run("api:app", host="0.0.0.0", port=port, reload=True)
+    # Save graph to bytes
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    buf.seek(0)
+    plt.close()
+
+    # Return image as response
+    return StreamingResponse(buf, media_type="image/png")
+
 
