@@ -1,31 +1,27 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
-from typing import List
+import os
 
-app = FastAPI(title="Antenna Cloud JSON API")
+app = FastAPI(title="Antenna Cloud API")
 
-# Define input data model
-class AntennaData(BaseModel):
-    frequency: List[float]
-    amplitude: List[float]
+# Root route to prevent 404
+@app.get("/")
+def root():
+    return {"status": "API is live!"}
 
-# Create route to process JSON input
-@app.post("/process_json")
-async def process_json(data: AntennaData):
-    if len(data.frequency) != len(data.amplitude):
-        return {"error": "Frequency and amplitude lists must have the same length."}
-    
-    # Example calculations
-    avg_amplitude = sum(data.amplitude) / len(data.amplitude)
-    max_amplitude = max(data.amplitude)
-    min_amplitude = min(data.amplitude)
+# Example endpoint
+@app.get("/hello")
+def hello():
+    return {"message": "Hello World"}
 
-    return {
-        "message": "Data processed successfully",
-        "average_amplitude": avg_amplitude,
-        "max_amplitude": max_amplitude,
-        "min_amplitude": min_amplitude,
-        "frequency": data.frequency,
-        "amplitude": data.amplitude
-    }
+# Add more endpoints below as needed
+# @app.get("/another-endpoint")
+# def another():
+#     return {"data": "This is another endpoint"}
+
+# Run with uvicorn when executed directly
+if __name__ == "__main__":
+    import uvicorn
+    # Use the PORT environment variable provided by Render
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run("api:app", host="0.0.0.0", port=port, reload=True)
 
